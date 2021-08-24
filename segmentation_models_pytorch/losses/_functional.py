@@ -67,7 +67,8 @@ def focal_loss_with_logits(
     """
     target = target.type(output.type())
 
-    logpt = F.binary_cross_entropy_with_logits(output, target, reduction="none")
+    logpt = F.binary_cross_entropy_with_logits(
+        output, target, reduction="none")
     pt = torch.exp(-logpt)
 
     # compute the loss
@@ -175,7 +176,8 @@ def soft_dice_score(
     else:
         intersection = torch.sum(output * target)
         cardinality = torch.sum(output + target)
-    dice_score = (2.0 * intersection + smooth) / (cardinality + smooth).clamp_min(eps)
+    dice_score = (2.0 * intersection + smooth) / \
+        (cardinality + smooth).clamp_min(eps)
     return dice_score
 
 
@@ -191,7 +193,8 @@ def soft_tversky_score(output: torch.Tensor, target: torch.Tensor, alpha: float,
         fp = torch.sum(output * (1. - target))
         fn = torch.sum((1 - output) * target)
 
-    tversky_score = (intersection + smooth) / (intersection + alpha * fp + beta * fn + smooth).clamp_min(eps)
+    tversky_score = (intersection + smooth) / (intersection +
+                                               alpha * fp + beta * fn + smooth).clamp_min(eps)
     return tversky_score
 
 
@@ -211,7 +214,8 @@ def wing_loss(output: torch.Tensor, target: torch.Tensor, width=5, curvature=0.5
     idx_smaller = diff_abs < width
     idx_bigger = diff_abs >= width
 
-    loss[idx_smaller] = width * torch.log(1 + diff_abs[idx_smaller] / curvature)
+    loss[idx_smaller] = width * \
+        torch.log(1 + diff_abs[idx_smaller] / curvature)
 
     C = width - width * math.log(1 + width / curvature)
     loss[idx_bigger] = loss[idx_bigger] - C

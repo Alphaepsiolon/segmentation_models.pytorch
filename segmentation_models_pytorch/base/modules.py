@@ -35,7 +35,8 @@ class Conv2dReLU(nn.Sequential):
         relu = nn.ReLU(inplace=True)
 
         if use_batchnorm == "inplace":
-            bn = InPlaceABN(out_channels, activation="leaky_relu", activation_param=0.0)
+            bn = InPlaceABN(
+                out_channels, activation="leaky_relu", activation_param=0.0)
             relu = nn.Identity()
 
         elif use_batchnorm and use_batchnorm != "inplace":
@@ -98,7 +99,8 @@ class Activation(nn.Module):
         elif callable(name):
             self.activation = name(**params)
         else:
-            raise ValueError('Activation should be callable/sigmoid/softmax/logsoftmax/tanh/None; got {}'.format(name))
+            raise ValueError(
+                'Activation should be callable/sigmoid/softmax/logsoftmax/tanh/None; got {}'.format(name))
 
     def forward(self, x):
         return self.activation(x)
@@ -118,3 +120,8 @@ class Attention(nn.Module):
 
     def forward(self, x):
         return self.attention(x)
+
+
+class Flatten(nn.Module):
+    def forward(self, x):
+        return x.view(x.shape[0], -1)

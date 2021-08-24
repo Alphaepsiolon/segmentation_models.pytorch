@@ -25,13 +25,101 @@ Methods:
 from copy import deepcopy
 
 import torch.nn as nn
-
+import torch
 from torchvision.models.resnet import ResNet
 from torchvision.models.resnet import BasicBlock
 from torchvision.models.resnet import Bottleneck
 from pretrainedmodels.models.torchvision_models import pretrained_settings
 
 from ._base import EncoderMixin
+
+import torch.nn as nn
+import torchvision.models as models
+from torch.autograd import Variable
+
+
+class DilatedResnetEncoder(nn.Module):
+    # add condition to only apply dilation only to layer4 not layer3(apply _nostride_dilate to only one)
+
+    def __init__(self, model, in_channels=3, dilate_scale=8):
+        super(DilatedResnetEncoder, self).__init__()
+        from functools import partial
+
+        if model == 'resnet34':
+            model = models.resnet34(pretrained=True)
+            self.out_channels = (in_channels, 64, 64, 128, 256, 512)
+
+        elif model == 'resnet50':
+            model = models.resnet50(pretrained=True)
+            self.out_channels = (in_channels, 64, 256, 512, 1024, 2048)
+
+        else:
+            raise KeyError("Dilation supported only for resnet34,resnet50")
+
+        if in_channels != 3:
+            weight = model.conv1.weight
+            out_channels = model.conv1.out_channels
+            model.conv1 = torch.nn.Conv2d(in_channels, out_channels, kernel_size=model.conv1.kernel_size,
+                                          stride=model.conv1.stride, padding=model.conv1.padding, bias=False).cuda()
+            model.conv1.weight[:, :3].data = torch.nn.Parameter(
+                weight.data).cuda()
+            for i in range(3, in_channels):
+                model.conv1.weight[:, i].data = torch.nn.Parameter(
+                    weight[:, 0].data).cuda()
+
+        orig_resnet = model
+        if dilate_scale == 8:
+            orig_resnet.layer3.apply(
+                partial(self._nostride_dilate, dilate=2))
+            orig_resnet.layer4.apply(
+                partial(self._nostride_dilate, dilate=4))
+        elif dilate_scale == 16:
+            orig_resnet.layer4.apply(
+                partial(self._nostride_dilate, dilate=2))
+
+        # take pretrained resnet, except AvgPool and FC
+        self.conv1 = orig_resnet.conv1
+        self.bn1 = orig_resnet.bn1
+        self.relu = orig_resnet.relu
+        self.maxpool = orig_resnet.maxpool
+        self.maxpool.return_indices = True  # **
+        self.layer1 = orig_resnet.layer1
+        self.layer2 = orig_resnet.layer2
+        self.layer3 = orig_resnet.layer3
+        self.layer4 = orig_resnet.layer4
+
+    def _nostride_dilate(self, m, dilate):
+        classname = m.__class__.__name__
+        if classname.find('Conv') != -1:
+            # the convolution with stride
+            if m.stride == (2, 2):
+                m.stride = (1, 1)
+                if m.kernel_size == (3, 3):
+                    m.dilation = (dilate // 2, dilate // 2)
+                    m.padding = (dilate // 2, dilate // 2)
+            # other convoluions
+            else:
+                if m.kernel_size == (3, 3):
+                    m.dilation = (dilate, dilate)
+                    m.padding = (dilate, dilate)
+
+    def forward(self, x, return_feature_maps=False):
+        conv_out = [x]
+        x = self.relu(self.bn1(self.conv1(x)))
+        conv_out.append(x)
+        x, indices = self.maxpool(x)
+        x = self.layer1(x)
+        conv_out.append(x)
+        x = self.layer2(x)
+        conv_out.append(x)
+        x = self.layer3(x)
+        conv_out.append(x)
+        x = self.layer4(x)
+        conv_out.append(x)
+
+#         for i,e in enumerate(conv_out): print(f'DilatedResnetEncoderfeat_{i}',e.size())
+
+        return conv_out
 
 
 class ResNetEncoder(ResNet, EncoderMixin):
@@ -61,12 +149,13 @@ class ResNetEncoder(ResNet, EncoderMixin):
         for i in range(self._depth + 1):
             x = stages[i](x)
             features.append(x)
-
+        for i, e in enumerate(features):
+            print(f'ResNetEncoderfeat_{i}', e.size())
         return features
 
     def load_state_dict(self, state_dict, **kwargs):
-        state_dict.pop("fc.bias", None)
-        state_dict.pop("fc.weight", None)
+        state_dict.pop("fc.bias")
+        state_dict.pop("fc.weight")
         super().load_state_dict(state_dict, **kwargs)
 
 

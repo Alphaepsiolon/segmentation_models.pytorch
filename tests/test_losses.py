@@ -2,6 +2,7 @@ import pytest
 import torch
 import segmentation_models_pytorch as smp
 import segmentation_models_pytorch.losses._functional as F
+<<<<<<< HEAD
 from segmentation_models_pytorch.losses import (
     DiceLoss,
     JaccardLoss,
@@ -9,6 +10,9 @@ from segmentation_models_pytorch.losses import (
     SoftCrossEntropyLoss,
     TverskyLoss,
 )
+=======
+from segmentation_models_pytorch.losses import DiceLoss, JaccardLoss, SoftBCEWithLogitsLoss, SoftCrossEntropyLoss
+>>>>>>> first commit
 
 
 def test_focal_loss_with_logits():
@@ -77,6 +81,7 @@ def test_soft_dice_score(y_true, y_pred, expected, eps):
     assert float(actual) == pytest.approx(expected, eps)
 
 
+<<<<<<< HEAD
 @pytest.mark.parametrize(
     ["y_true", "y_pred", "expected", "eps", "alpha", "beta"],
     [
@@ -92,6 +97,8 @@ def test_soft_tversky_score(y_true, y_pred, expected, eps, alpha, beta):
     assert float(actual) == pytest.approx(expected, eps)
 
 
+=======
+>>>>>>> first commit
 @torch.no_grad()
 def test_dice_loss_binary():
     eps = 1e-5
@@ -131,6 +138,7 @@ def test_dice_loss_binary():
 
 
 @torch.no_grad()
+<<<<<<< HEAD
 def test_tversky_loss_binary():
     eps = 1e-5
     # with alpha=0.5; beta=0.5 it is equal to DiceLoss
@@ -170,6 +178,8 @@ def test_tversky_loss_binary():
 
 
 @torch.no_grad()
+=======
+>>>>>>> first commit
 def test_binary_jaccard_loss():
     eps = 1e-5
     criterion = JaccardLoss(mode=smp.losses.BINARY_MODE, from_logits=False)

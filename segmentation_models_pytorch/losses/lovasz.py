@@ -43,11 +43,13 @@ def _lovasz_hinge(logits, labels, per_image=True, ignore=None):
     """
     if per_image:
         loss = mean(
-            _lovasz_hinge_flat(*_flatten_binary_scores(log.unsqueeze(0), lab.unsqueeze(0), ignore))
+            _lovasz_hinge_flat(
+                *_flatten_binary_scores(log.unsqueeze(0), lab.unsqueeze(0), ignore))
             for log, lab in zip(logits, labels)
         )
     else:
-        loss = _lovasz_hinge_flat(*_flatten_binary_scores(logits, labels, ignore))
+        loss = _lovasz_hinge_flat(
+            *_flatten_binary_scores(logits, labels, ignore))
     return loss
 
 
@@ -100,11 +102,13 @@ def _lovasz_softmax(probas, labels, classes="present", per_image=False, ignore=N
     """
     if per_image:
         loss = mean(
-            _lovasz_softmax_flat(*_flatten_probas(prob.unsqueeze(0), lab.unsqueeze(0), ignore), classes=classes)
+            _lovasz_softmax_flat(
+                *_flatten_probas(prob.unsqueeze(0), lab.unsqueeze(0), ignore), classes=classes)
             for prob, lab in zip(probas, labels)
         )
     else:
-        loss = _lovasz_softmax_flat(*_flatten_probas(probas, labels, ignore), classes=classes)
+        loss = _lovasz_softmax_flat(
+            *_flatten_probas(probas, labels, ignore), classes=classes)
     return loss
 
 
@@ -148,7 +152,8 @@ def _flatten_probas(probas, labels, ignore=None):
         probas = probas.view(B, 1, H, W)
 
     C = probas.size(1)
-    probas = torch.movedim(probas, 1, -1)  # [B, C, Di, Dj, ...] -> [B, Di, Dj, ..., C]
+    # [B, C, Di, Dj, ...] -> [B, Di, Dj, ..., C]
+    probas = torch.movedim(probas, 1, -1)
     probas = probas.contiguous().view(-1, C)  # [P, C]
 
     labels = labels.view(-1)
@@ -200,7 +205,7 @@ class LovaszLoss(_Loss):
             mode: Loss mode 'binary', 'multiclass' or 'multilabel'
             ignore_index: Label that indicates ignored pixels (does not contribute to loss)
             per_image: If True loss computed per each image and then averaged, else computed per whole batch
-        
+
         Shape
              - **y_pred** - torch.Tensor of shape (N, C, H, W)
              - **y_true** - torch.Tensor of shape (N, H, W) or (N, C, H, W)
@@ -218,10 +223,12 @@ class LovaszLoss(_Loss):
     def forward(self, y_pred, y_true):
 
         if self.mode in {BINARY_MODE, MULTILABEL_MODE}:
-            loss = _lovasz_hinge(y_pred, y_true, per_image=self.per_image, ignore=self.ignore_index)
+            loss = _lovasz_hinge(
+                y_pred, y_true, per_image=self.per_image, ignore=self.ignore_index)
         elif self.mode == MULTICLASS_MODE:
             y_pred = y_pred.softmax(dim=1)
-            loss = _lovasz_softmax(y_pred, y_true, per_image=self.per_image, ignore=self.ignore_index)    
+            loss = _lovasz_softmax(
+                y_pred, y_true, per_image=self.per_image, ignore=self.ignore_index)
         else:
             raise ValueError("Wrong mode {}.".format(self.mode))
         return loss

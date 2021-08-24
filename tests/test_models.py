@@ -1,3 +1,4 @@
+import segmentation_models_pytorch as smp
 import os
 import sys
 import mock
@@ -6,7 +7,6 @@ import torch
 
 # mock detection module
 sys.modules["torchvision._C"] = mock.Mock()
-import segmentation_models_pytorch as smp
 
 
 def get_encoders():
@@ -18,7 +18,7 @@ def get_encoders():
     ]
     encoders = smp.encoders.get_encoder_names()
     encoders = [e for e in encoders if e not in exclude_encoders]
-    encoders.append("tu-resnet34") # for timm universal encoder
+    encoders.append("tu-resnet34")  # for timm universal encoder
     return encoders
 
 
@@ -73,7 +73,8 @@ def test_forward(model_class, encoder_name, encoder_depth, **kwargs):
 
 @pytest.mark.parametrize(
     "model_class",
-    [smp.PAN, smp.FPN, smp.PSPNet, smp.Linknet, smp.Unet, smp.UnetPlusPlus, smp.MAnet, smp.DeepLabV3]
+    [smp.PAN, smp.FPN, smp.PSPNet, smp.Linknet, smp.Unet,
+        smp.UnetPlusPlus, smp.MAnet, smp.DeepLabV3]
 )
 def test_forward_backward(model_class):
     sample = get_sample(model_class)
@@ -96,7 +97,8 @@ def test_aux_output(model_class):
 @pytest.mark.parametrize("model_class", [smp.FPN, smp.PSPNet])
 def test_upsample(model_class, upsampling):
     default_upsampling = 4 if model_class is smp.FPN else 8
-    model = model_class(DEFAULT_ENCODER, encoder_weights=None, upsampling=upsampling)
+    model = model_class(
+        DEFAULT_ENCODER, encoder_weights=None, upsampling=upsampling)
     sample = get_sample(model_class)
     mask = model(sample)
     assert mask.size()[-1] / 64 == upsampling / default_upsampling
@@ -107,7 +109,8 @@ def test_upsample(model_class, upsampling):
 @pytest.mark.parametrize("in_channels", [1, 2, 4])
 def test_in_channels(model_class, encoder_name, in_channels):
     sample = torch.ones([1, in_channels, 64, 64])
-    model = model_class(DEFAULT_ENCODER, encoder_weights=None, in_channels=in_channels)
+    model = model_class(DEFAULT_ENCODER, encoder_weights=None,
+                        in_channels=in_channels)
     model.eval()
     with torch.no_grad():
         model(sample)
@@ -119,7 +122,7 @@ def test_in_channels(model_class, encoder_name, in_channels):
 def test_dilation(encoder_name):
     if (
         encoder_name in ['inceptionresnetv2', 'xception', 'inceptionv4'] or
-        encoder_name.startswith('vgg') or 
+        encoder_name.startswith('vgg') or
         encoder_name.startswith('densenet') or
         encoder_name.startswith('timm-res')
     ):
@@ -133,7 +136,8 @@ def test_dilation(encoder_name):
         output = encoder(sample)
 
     shapes = [out.shape[-1] for out in output]
-    assert shapes == [64, 32, 16, 8, 4, 4]  # last downsampling replaced with dilation
+    # last downsampling replaced with dilation
+    assert shapes == [64, 32, 16, 8, 4, 4]
 
 
 if __name__ == "__main__":

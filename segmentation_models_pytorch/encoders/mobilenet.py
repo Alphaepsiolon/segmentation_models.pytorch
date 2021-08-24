@@ -59,8 +59,13 @@ class MobileNetV2Encoder(torchvision.models.MobileNetV2, EncoderMixin):
         return features
 
     def load_state_dict(self, state_dict, **kwargs):
+<<<<<<< HEAD
         state_dict.pop("classifier.1.bias", None)
         state_dict.pop("classifier.1.weight", None)
+=======
+        state_dict.pop("classifier.1.bias")
+        state_dict.pop("classifier.1.weight")
+>>>>>>> first commit
         super().load_state_dict(state_dict, **kwargs)
 
 

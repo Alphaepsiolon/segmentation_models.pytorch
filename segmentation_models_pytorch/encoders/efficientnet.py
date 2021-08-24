@@ -32,7 +32,8 @@ from ._base import EncoderMixin
 class EfficientNetEncoder(EfficientNet, EncoderMixin):
     def __init__(self, stage_idxs, out_channels, model_name, depth=5):
 
-        blocks_args, global_params = get_model_params(model_name, override_params=None)
+        blocks_args, global_params = get_model_params(
+            model_name, override_params=None)
         super().__init__(blocks_args, global_params)
 
         self._stage_idxs = stage_idxs
@@ -68,7 +69,8 @@ class EfficientNetEncoder(EfficientNet, EncoderMixin):
             # Block stages need drop_connect rate
             else:
                 for module in stages[i]:
-                    drop_connect = drop_connect_rate * block_number / len(self._blocks)
+                    drop_connect = drop_connect_rate * \
+                        block_number / len(self._blocks)
                     block_number += 1.
                     x = module(x, drop_connect)
 

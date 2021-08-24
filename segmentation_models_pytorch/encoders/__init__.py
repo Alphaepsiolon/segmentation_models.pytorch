@@ -20,8 +20,9 @@ from .timm_mobilenetv3 import timm_mobilenetv3_encoders
 from .timm_gernet import timm_gernet_encoders
 
 from .timm_universal import TimmUniversalEncoder
-
 from ._preprocessing import preprocess_input
+from .resnet import DilatedResnetEncoder
+
 
 encoders = {}
 encoders.update(resnet_encoders)
@@ -39,6 +40,7 @@ encoders.update(timm_resnest_encoders)
 encoders.update(timm_res2net_encoders)
 encoders.update(timm_regnet_encoders)
 encoders.update(timm_sknet_encoders)
+<< << << < HEAD
 encoders.update(timm_mobilenetv3_encoders)
 encoders.update(timm_gernet_encoders)
 
@@ -60,7 +62,8 @@ def get_encoder(name, in_channels=3, depth=5, weights=None, output_stride=32, **
     try:
         Encoder = encoders[name]["encoder"]
     except KeyError:
-        raise KeyError("Wrong encoder name `{}`, supported encoders: {}".format(name, list(encoders.keys())))
+        raise KeyError("Wrong encoder name `{}`, supported encoders: {}".format(
+            name, list(encoders.keys())))
 
     params = encoders[name]["params"]
     params.update(depth=depth)
@@ -71,15 +74,57 @@ def get_encoder(name, in_channels=3, depth=5, weights=None, output_stride=32, **
             settings = encoders[name]["pretrained_settings"][weights]
         except KeyError:
             raise KeyError("Wrong pretrained weights `{}` for encoder `{}`. Available options are: {}".format(
-                weights, name, list(encoders[name]["pretrained_settings"].keys()),
+                weights, name, list(
+                    encoders[name]["pretrained_settings"].keys()),
             ))
         encoder.load_state_dict(model_zoo.load_url(settings["url"]))
 
     encoder.set_in_channels(in_channels, pretrained=weights is not None)
     if output_stride != 32:
         encoder.make_dilated(output_stride)
-    
-    return encoder
+
+
+== == == =
+
+
+def get_encoder(name, in_channels=3, depth=5, weights=None):
+
+    if 'dilated' in name:  # name format dilated_resnetX
+        print(name, 'in dilated')
+        encoder = DilatedResnetEncoder(name.split('_')[-1], in_channels)
+        encoder.in_channels = in_channels
+        print('!!! For DilatedResnetEncoder ImageNet weights loaded by force !!')
+#         if weights is not None:
+#             try:encoder.load_state_dict(torch.load(weights))
+#             except:encoder.load_state_dict(torch.load(weights)['state_dict'])
+#         print('Dilated Loaded')
+
+    else:
+        try:
+            Encoder = encoders[name]["encoder"]
+        except KeyError:
+            raise KeyError("Wrong encoder name `{}`, supported encoders: {}".format(
+                name, list(encoders.keys())))
+
+        params = encoders[name]["params"]
+        params.update(depth=depth)
+        encoder = Encoder(**params)
+
+        if weights is not None:
+            try:
+                settings = encoders[name]["pretrained_settings"][weights]
+            except KeyError:
+                raise KeyError("Wrong pretrained weights `{}` for encoder `{}`. Available options are: {}".format(
+                    weights, name, list(
+                        encoders[name]["pretrained_settings"].keys()),
+                ))
+            encoder.load_state_dict(model_zoo.load_url(settings["url"]))
+
+        encoder.set_in_channels(in_channels)
+
+
+>>>>>> > first commit
+return encoder
 
 
 def get_encoder_names():
@@ -90,7 +135,8 @@ def get_preprocessing_params(encoder_name, pretrained="imagenet"):
     settings = encoders[encoder_name]["pretrained_settings"]
 
     if pretrained not in settings.keys():
-        raise ValueError("Available pretrained options {}".format(settings.keys()))
+        raise ValueError(
+            "Available pretrained options {}".format(settings.keys()))
 
     formatted_settings = {}
     formatted_settings["input_space"] = settings[pretrained].get("input_space")

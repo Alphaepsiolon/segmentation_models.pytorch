@@ -12,11 +12,11 @@ class DeepLabV3(SegmentationModel):
     Args:
         encoder_name: Name of the classification model that will be used as an encoder (a.k.a backbone)
             to extract features of different spatial resolution
-        encoder_depth: A number of stages used in encoder in range [3, 5]. Each stage generate features 
+        encoder_depth: A number of stages used in encoder in range [3, 5]. Each stage generate features
             two times smaller in spatial dimensions than previous one (e.g. for depth 0 we will have features
             with shapes [(N, C, H, W),], for depth 1 - [(N, C, H, W), (N, C, H // 2, W // 2)] and so on).
             Default is 5
-        encoder_weights: One of **None** (random initialization), **"imagenet"** (pre-training on ImageNet) and 
+        encoder_weights: One of **None** (random initialization), **"imagenet"** (pre-training on ImageNet) and
             other pretrained weights (see table with available weights for each encoder_name)
         decoder_channels: A number of convolution filters in ASPP module. Default is 256
         in_channels: A number of input channels for the model, default is 3 (RGB images)
@@ -25,7 +25,7 @@ class DeepLabV3(SegmentationModel):
             Available options are **"sigmoid"**, **"softmax"**, **"logsoftmax"**, **"tanh"**, **"identity"**, **callable** and **None**.
             Default is **None**
         upsampling: Final upsampling factor. Default is 8 to preserve input-output spatial shape identity
-        aux_params: Dictionary with parameters of the auxiliary output (classification head). Auxiliary output is build 
+        aux_params: Dictionary with parameters of the auxiliary output (classification head). Auxiliary output is build
             on top of encoder if **aux_params** is not **None** (default). Supported params:
                 - classes (int): A number of classes
                 - pooling (str): One of "max", "avg". Default is "avg"
@@ -60,6 +60,10 @@ class DeepLabV3(SegmentationModel):
             weights=encoder_weights,
             output_stride=8,
         )
+        self.encoder.make_dilated(
+            stage_list=[4, 5],
+            dilation_list=[2, 4]
+        )
 
         self.decoder = DeepLabV3Decoder(
             in_channels=self.encoder.out_channels[-1],
@@ -85,15 +89,15 @@ class DeepLabV3(SegmentationModel):
 class DeepLabV3Plus(SegmentationModel):
     """DeepLabV3+ implementation from "Encoder-Decoder with Atrous Separable
     Convolution for Semantic Image Segmentation"
-    
+
     Args:
         encoder_name: Name of the classification model that will be used as an encoder (a.k.a backbone)
             to extract features of different spatial resolution
-        encoder_depth: A number of stages used in encoder in range [3, 5]. Each stage generate features 
+        encoder_depth: A number of stages used in encoder in range [3, 5]. Each stage generate features
             two times smaller in spatial dimensions than previous one (e.g. for depth 0 we will have features
             with shapes [(N, C, H, W),], for depth 1 - [(N, C, H, W), (N, C, H // 2, W // 2)] and so on).
             Default is 5
-        encoder_weights: One of **None** (random initialization), **"imagenet"** (pre-training on ImageNet) and 
+        encoder_weights: One of **None** (random initialization), **"imagenet"** (pre-training on ImageNet) and
             other pretrained weights (see table with available weights for each encoder_name)
         encoder_output_stride: Downsampling factor for last encoder features (see original paper for explanation)
         decoder_atrous_rates: Dilation rates for ASPP module (should be a tuple of 3 integer values)
@@ -104,7 +108,7 @@ class DeepLabV3Plus(SegmentationModel):
             Available options are **"sigmoid"**, **"softmax"**, **"logsoftmax"**, **"tanh"**, **"identity"**, **callable** and **None**.
             Default is **None**
         upsampling: Final upsampling factor. Default is 4 to preserve input-output spatial shape identity
-        aux_params: Dictionary with parameters of the auxiliary output (classification head). Auxiliary output is build 
+        aux_params: Dictionary with parameters of the auxiliary output (classification head). Auxiliary output is build
             on top of encoder if **aux_params** is not **None** (default). Supported params:
                 - classes (int): A number of classes
                 - pooling (str): One of "max", "avg". Default is "avg"
@@ -112,11 +116,12 @@ class DeepLabV3Plus(SegmentationModel):
                 - activation (str): An activation function to apply "sigmoid"/"softmax" (could be **None** to return logits)
     Returns:
         ``torch.nn.Module``: **DeepLabV3Plus**
-    
+
     Reference:
         https://arxiv.org/abs/1802.02611v3
 
     """
+
     def __init__(
             self,
             encoder_name: str = "resnet34",
@@ -133,19 +138,45 @@ class DeepLabV3Plus(SegmentationModel):
     ):
         super().__init__()
 
+
+<< << << < HEAD
         if encoder_output_stride not in [8, 16]:
             raise ValueError(
-                "Encoder output stride should be 8 or 16, got {}".format(encoder_output_stride)
+                "Encoder output stride should be 8 or 16, got {}".format(
+                    encoder_output_stride)
             )
 
+== == == =
+>>>>>> > first commit
         self.encoder = get_encoder(
             encoder_name,
             in_channels=in_channels,
             depth=encoder_depth,
             weights=encoder_weights,
+<< << << < HEAD
             output_stride=encoder_output_stride,
         )
 
+== == == =
+        )
+
+        if encoder_output_stride == 8:
+            self.encoder.make_dilated(
+                stage_list = [4, 5],
+                dilation_list = [2, 4]
+            )
+
+        elif encoder_output_stride == 16:
+            self.encoder.make_dilated(
+                stage_list=[5],
+                dilation_list=[2]
+            )
+        else:
+            raise ValueError(
+                "Encoder output stride should be 8 or 16, got {}".format(encoder_output_stride)
+            )
+
+>>>>>>> first commit
         self.decoder = DeepLabV3PlusDecoder(
             encoder_channels=self.encoder.out_channels,
             out_channels=decoder_channels,

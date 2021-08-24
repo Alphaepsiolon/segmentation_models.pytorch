@@ -22,7 +22,8 @@ class DecoderBlock(nn.Module):
             padding=1,
             use_batchnorm=use_batchnorm,
         )
-        self.attention1 = md.Attention(attention_type, in_channels=in_channels + skip_channels)
+        self.attention1 = md.Attention(
+            attention_type, in_channels=in_channels + skip_channels)
         self.conv2 = md.Conv2dReLU(
             out_channels,
             out_channels,
@@ -30,7 +31,8 @@ class DecoderBlock(nn.Module):
             padding=1,
             use_batchnorm=use_batchnorm,
         )
-        self.attention2 = md.Attention(attention_type, in_channels=out_channels)
+        self.attention2 = md.Attention(
+            attention_type, in_channels=out_channels)
 
     def forward(self, x, skip=None):
         x = F.interpolate(x, scale_factor=2, mode="nearest")
@@ -68,6 +70,7 @@ class UnetDecoder(nn.Module):
             encoder_channels,
             decoder_channels,
             n_blocks=5,
+            undo_imagenet_norm=False,
             use_batchnorm=True,
             attention_type=None,
             center=False,
@@ -81,14 +84,26 @@ class UnetDecoder(nn.Module):
                 )
             )
 
-        encoder_channels = encoder_channels[1:]  # remove first skip with same spatial resolution
-        encoder_channels = encoder_channels[::-1]  # reverse channels to start from head of encoder
+        # remove first skip with same spatial resolution
+        encoder_channels = encoder_channels[1:]
+
+#         encoder_channels = encoder_channels[1:]  # remove first skip with same spatial resolution
+
+        # reverse channels to start from head of encoder
+        encoder_channels = encoder_channels[::-1]
 
         # computing blocks input and output channels
         head_channels = encoder_channels[0]
         in_channels = [head_channels] + list(decoder_channels[:-1])
         skip_channels = list(encoder_channels[1:]) + [0]
         out_channels = decoder_channels
+
+        self.undo_imagenet_norm = undo_imagenet_norm
+        if undo_imagenet_norm:
+            self.mean = torch.tensor([.485, .456, .406, 1])[
+                None, :, None, None].cuda()  # 1 for trimap
+            self.std = torch.tensor([0.229, 0.224, 0.225, 0])[
+                None, :, None, None].cuda()  # 0 for trimap
 
         if center:
             self.center = CenterBlock(
@@ -98,7 +113,8 @@ class UnetDecoder(nn.Module):
             self.center = nn.Identity()
 
         # combine decoder keyword arguments
-        kwargs = dict(use_batchnorm=use_batchnorm, attention_type=attention_type)
+        kwargs = dict(use_batchnorm=use_batchnorm,
+                      attention_type=attention_type)
         blocks = [
             DecoderBlock(in_ch, skip_ch, out_ch, **kwargs)
             for in_ch, skip_ch, out_ch in zip(in_channels, skip_channels, out_channels)
@@ -107,8 +123,10 @@ class UnetDecoder(nn.Module):
 
     def forward(self, *features):
 
-        features = features[1:]    # remove first skip with same spatial resolution
-        features = features[::-1]  # reverse channels to start from head of encoder
+        # remove first skip with same spatial resolution
+        features = features[1:]
+        # reverse channels to start from head of encoder
+        features = features[::-1]
 
         head = features[0]
         skips = features[1:]

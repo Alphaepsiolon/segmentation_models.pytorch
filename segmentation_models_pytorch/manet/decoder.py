@@ -12,9 +12,11 @@ class PAB(nn.Module):
         self.in_channels = in_channels
         self.top_conv = nn.Conv2d(in_channels, pab_channels, kernel_size=1)
         self.center_conv = nn.Conv2d(in_channels, pab_channels, kernel_size=1)
-        self.bottom_conv = nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1)
+        self.bottom_conv = nn.Conv2d(
+            in_channels, in_channels, kernel_size=3, padding=1)
         self.map_softmax = nn.Softmax(dim=1)
-        self.out_conv = nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1)
+        self.out_conv = nn.Conv2d(
+            in_channels, in_channels, kernel_size=3, padding=1)
 
     def forward(self, x):
         bsize = x.size()[0]
@@ -72,7 +74,8 @@ class MFAB(nn.Module):
             nn.Sigmoid(),
         )
         self.conv1 = md.Conv2dReLU(
-            skip_channels + skip_channels,  # we transform C-prime form high level to C from skip connection
+            # we transform C-prime form high level to C from skip connection
+            skip_channels + skip_channels,
             out_channels,
             kernel_size=3,
             padding=1,
@@ -152,8 +155,10 @@ class MAnetDecoder(nn.Module):
                 )
             )
 
-        encoder_channels = encoder_channels[1:]  # remove first skip with same spatial resolution
-        encoder_channels = encoder_channels[::-1]  # reverse channels to start from head of encoder
+        # remove first skip with same spatial resolution
+        encoder_channels = encoder_channels[1:]
+        # reverse channels to start from head of encoder
+        encoder_channels = encoder_channels[::-1]
 
         # computing blocks input and output channels
         head_channels = encoder_channels[0]
@@ -161,7 +166,8 @@ class MAnetDecoder(nn.Module):
         skip_channels = list(encoder_channels[1:]) + [0]
         out_channels = decoder_channels
 
-        self.center = PAB(head_channels, head_channels, pab_channels=pab_channels)
+        self.center = PAB(head_channels, head_channels,
+                          pab_channels=pab_channels)
 
         # combine decoder keyword arguments
         kwargs = dict(use_batchnorm=use_batchnorm)  # no attention type here
@@ -175,8 +181,10 @@ class MAnetDecoder(nn.Module):
 
     def forward(self, *features):
 
-        features = features[1:]    # remove first skip with same spatial resolution
-        features = features[::-1]  # reverse channels to start from head of encoder
+        # remove first skip with same spatial resolution
+        features = features[1:]
+        # reverse channels to start from head of encoder
+        features = features[::-1]
 
         head = features[0]
         skips = features[1:]

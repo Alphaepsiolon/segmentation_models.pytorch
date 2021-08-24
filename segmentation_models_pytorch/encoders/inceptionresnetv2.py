@@ -61,7 +61,8 @@ class InceptionResNetV2Encoder(InceptionResNetV2, EncoderMixin):
             nn.Sequential(self.maxpool_3a, self.conv2d_3b, self.conv2d_4a),
             nn.Sequential(self.maxpool_5a, self.mixed_5b, self.repeat),
             nn.Sequential(self.mixed_6a, self.repeat_1),
-            nn.Sequential(self.mixed_7a, self.repeat_2, self.block8, self.conv2d_7b),
+            nn.Sequential(self.mixed_7a, self.repeat_2,
+                          self.block8, self.conv2d_7b),
         ]
 
     def forward(self, x):

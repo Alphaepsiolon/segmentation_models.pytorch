@@ -50,6 +50,7 @@ def get_efficientnet_kwargs(channel_multiplier=1.0, depth_multiplier=1.0, drop_r
     )
     return model_kwargs
 
+
 def gen_efficientnet_lite_kwargs(channel_multiplier=1.0, depth_multiplier=1.0, drop_rate=0.2):
     """Creates an EfficientNet-Lite model.
 
@@ -78,7 +79,8 @@ def gen_efficientnet_lite_kwargs(channel_multiplier=1.0, depth_multiplier=1.0, d
         ['ir_r1_k3_s1_e6_c320'],
     ]
     model_kwargs = dict(
-        block_args=decode_arch_def(arch_def, depth_multiplier, fix_first_last=True),
+        block_args=decode_arch_def(
+            arch_def, depth_multiplier, fix_first_last=True),
         num_features=1280,
         stem_size=32,
         fix_stem=True,
@@ -88,6 +90,7 @@ def gen_efficientnet_lite_kwargs(channel_multiplier=1.0, depth_multiplier=1.0, d
         drop_path_rate=0.2,
     )
     return model_kwargs
+
 
 class EfficientNetBaseEncoder(EfficientNet, EncoderMixin):
 
@@ -130,14 +133,16 @@ class EfficientNetBaseEncoder(EfficientNet, EncoderMixin):
 class EfficientNetEncoder(EfficientNetBaseEncoder):
 
     def __init__(self, stage_idxs, out_channels, depth=5, channel_multiplier=1.0, depth_multiplier=1.0, drop_rate=0.2):
-        kwargs = get_efficientnet_kwargs(channel_multiplier, depth_multiplier, drop_rate)
+        kwargs = get_efficientnet_kwargs(
+            channel_multiplier, depth_multiplier, drop_rate)
         super().__init__(stage_idxs, out_channels, depth, **kwargs)
 
 
 class EfficientNetLiteEncoder(EfficientNetBaseEncoder):
 
     def __init__(self, stage_idxs, out_channels, depth=5, channel_multiplier=1.0, depth_multiplier=1.0, drop_rate=0.2):
-        kwargs = gen_efficientnet_lite_kwargs(channel_multiplier, depth_multiplier, drop_rate)
+        kwargs = gen_efficientnet_lite_kwargs(
+            channel_multiplier, depth_multiplier, drop_rate)
         super().__init__(stage_idxs, out_channels, depth, **kwargs)
 
 
